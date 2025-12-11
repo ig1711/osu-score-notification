@@ -44,5 +44,11 @@
 		"crons": [
 			"* * * * *"
 		]
-	}
+	},
+	"kv_namespaces": [
+		{
+			"binding": "OSU_KV",
+			"id": "70efac4d12e94744ac761914ccba32ed"
+		}
+	]
 }
