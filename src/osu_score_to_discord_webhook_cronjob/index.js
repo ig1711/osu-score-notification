@@ -93,7 +93,7 @@ export class Job {
                 this.db.setUserUpdateTime(userId, scores[0].ended_at);
         }
 
-        await this.discordAPI.send(embeds);
+        if (embeds.length > 0) await this.discordAPI.send(embeds);
     }
 }
 
