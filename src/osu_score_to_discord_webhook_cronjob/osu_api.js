@@ -9,9 +9,9 @@ export class OsuAPI {
         this.db = db;
     }
 
-    async getAccessToken() {
+    async getAccessToken(updateCache) {
         const token = await this.db.getAccessToken();
-        if (token) {
+        if (token && !updateCache) {
             this.access_token = token;
             return;
         }
@@ -56,7 +56,7 @@ export class OsuAPI {
         );
 
         if (response.status === 401) {
-            await this.getAccessToken();
+            await this.getAccessToken(true);
 
             response = await fetch(
                 `${API_ENDPOINT}/users/${userId}/scores/recent?limit=5&include_fails=1`,
