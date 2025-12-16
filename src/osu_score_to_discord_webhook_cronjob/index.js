@@ -58,22 +58,50 @@ export class Job {
 
         for (let userId of this.config.user_list) {
             const scores = await this.osuAPI.getScores(userId);
+            if (scores.length === 0) continue;
 
             const scoreUpdateTime = await this.db.getUserUpdateTime(userId);
             const lastDate = new Date(scoreUpdateTime || 0);
+
+            if (new Date(scores[0].ended_at) - lastDate >= 60 * 60 * 1000) {
+                const startEmbed = {
+                    title: `${scores[0].user.username} started playing`,
+                    timestamp: scores[0].ended_at,
+                    thumbnail: {
+                        url: scores[0].user.avatar_url,
+                    },
+                    author: {
+                        name: scores[0].user.username,
+                        url: `https://osu.ppy.sh/users/${scores[0].user.id}`,
+                        icon_url: scores[0].user.avatar_url,
+                    },
+                };
+
+                embeds.push(startEmbed);
+            }
 
             for (let score of scores) {
                 const scoreDate = new Date(score.ended_at);
 
                 if (lastDate >= scoreDate) continue;
 
+                if (!score.passed) continue;
+
                 const star = score.beatmap.difficulty_rating.toFixed(2);
                 const accuracy = (score.accuracy * 100).toFixed(2);
                 const pp = score.pp ? score.pp.toFixed() : 0;
 
+                const lenTotalDate = new Date(
+                    score.beatmap.total_length * 1000,
+                );
+                const lenDrainDate = new Date(score.beatmap.hit_length * 1000);
+
+                const lenTotalStr = `${lenTotalDate.getMinutes()}:${('0' + lenTotalDate.getSeconds()).slice(-2)}`;
+                const lenDrainStr = `${lenDrainDate.getMinutes()}:${('0' + lenDrainDate.getSeconds()).slice(-2)}`;
+
                 const embed = {
                     title: `[${star} ⭐] | ${score.user.username} | ${accuracy}% ${ranks[score.rank][0]} | ${pp} PP`,
-                    description: `[${score.beatmapset.title} [${score.beatmap.version}]](<${score.beatmap.url}>)`,
+                    description: `[${score.beatmapset.artist} - ${score.beatmapset.title} [${score.beatmap.version}]](<${score.beatmap.url}>)`,
                     timestamp: score.ended_at,
                     color: parseInt(ranks[score.rank][1], 16),
                     thumbnail: {
@@ -84,12 +112,54 @@ export class Job {
                         url: `https://osu.ppy.sh/users/${score.user.id}`,
                         icon_url: score.user.avatar_url,
                     },
+                    fields: [
+                        {
+                            name: '‌',
+                            inline: true,
+                            value: `\`\`\`asciidoc
+==     Stats     ==
+
+   Rank :: ${ranks[score.rank][0]}
+  Score :: ${score.total_score}
+    Acc :: ${accuracy}
+     PP :: ${score.pp || ''}
+  Combo :: ${score.max_combo} ${score.is_perfect_combo ? 'FC' : ''}
+
+    300 :: ${score.statistics.great || 0}
+    100 :: ${score.statistics.ok || 0}
+     50 :: ${score.statistics.meh || 0}
+   Miss :: ${score.statistics.miss || 0}
+
+   Mods :: ${score.mods.map((m) => m.acronym).join('+')}
+\`\`\``,
+                        },
+                        {
+                            name: '‌',
+                            inline: true,
+                            value: `\`\`\`asciidoc
+==     Map     ==
+
+ Length :: ${lenTotalStr} (${lenDrainStr})
+    BPM :: ${score.beatmap.bpm}
+Circles :: ${score.beatmap.count_circles}
+Sliders :: ${score.beatmap.count_sliders}
+
+     CS :: ${score.beatmap.cs}
+     HP :: ${score.beatmap.drain}
+     OD :: ${score.beatmap.accuracy}
+     AR :: ${score.beatmap.ar}
+     SR :: ${score.beatmap.difficulty_rating}
+
+ Status :: ${score.beatmap.status}
+\`\`\``,
+                        },
+                    ],
                 };
 
                 embeds.push(embed);
             }
 
-            if (scores[0])
+            if (new Date(scores[0].ended_at) !== new Date(scoreUpdateTime || 0))
                 this.db.setUserUpdateTime(userId, scores[0].ended_at);
         }
 

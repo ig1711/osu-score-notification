@@ -30,6 +30,7 @@ export class DiscordAPI {
                     username: this.username || 'osu!',
                     avatar_url: this.avatar_url || OSU_LOGO_URL,
                     embeds: embeds,
+                    content: embeds.some(e => e.title.includes('started')) ? '<@713715040288636928>' : '',
                 }),
             },
         );
