@@ -67,6 +67,25 @@ export class Job {
 
                 if (lastDate >= scoreDate) continue;
 
+                if (scoreDate - lastDate >= 60 * 60 * 1000) {
+                    const startEmbed = {
+                        title: `${score.user.username} started playing`,
+                        timestamp: score.ended_at,
+                        thumbnail: {
+                            url: score.user.avatar_url,
+                        },
+                        author: {
+                            name: score.user.username,
+                            url: `https://osu.ppy.sh/users/${score.user.id}`,
+                            icon_url: score.user.avatar_url,
+                        },
+                    };
+
+                    embeds.push(startEmbed);
+                }
+
+                if (!score.passed) continue;
+
                 const star = score.beatmap.difficulty_rating.toFixed(2);
                 const accuracy = (score.accuracy * 100).toFixed(2);
                 const pp = score.pp ? score.pp.toFixed() : 0;
